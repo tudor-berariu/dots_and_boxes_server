@@ -100,4 +100,5 @@ if __name__ == "__main__":
     d1.update(d2)
     return d1
   stats = [merge_dicts({"name": k}, v) for (k, v) in stats.items()]
+  stats.sort(key=lambda x: x["W"], reverse=True)
   export_results(stats)
