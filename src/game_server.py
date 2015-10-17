@@ -65,10 +65,16 @@ def get_players():
 
   return players
 
+def export_results(stats):
+  from jinja2 import Environment, FileSystemLoader
+  env = Environment(loader=FileSystemLoader(searchpath="./templates/"))
+  with open("stats.tex", "w") as out_file:
+    out_file.write(env.get_template("template.tex").render({"stats": stats}))
+
+
 if __name__ == "__main__":
   players = get_players()
-  scores = {name: 0 for name in map(lambda P: P().name, players)}
-  stats = {name: {"W": 0, "L": 0, "W_reasons": {}, "L_reasons": {}} for name in scores.keys()}
+  stats = {name: {"W": 0, "L": 0, "Wmsg": {}, "Lmsg": {}, "score": 0} for name in map(lambda P: P().name, players)}
   for (P1, P2) in product(players, players):
     if P1 == P2:
       continue
@@ -76,8 +82,8 @@ if __name__ == "__main__":
       p1 = P1()
       p2 = P2()
       (p1_score, p2_score, msg) = play_game(p1, p2, size, size)
-      scores[p1.name] = scores[p1.name] + p1_score
-      scores[p2.name] = scores[p2.name] + p2_score
+      stats[p1.name]["score"] = stats[p1.name]["score"] + p1_score
+      stats[p2.name]["score"] = stats[p2.name]["score"] + p2_score
       if p1_score > p2_score:
         winner = p1.name
         loser = p2.name
@@ -85,8 +91,13 @@ if __name__ == "__main__":
         winner = p2.name
         loser = p1.name
       stats[winner]["W"] = stats[winner]["W"] + 1
-      stats[winner]["W_reasons"][msg] = stats[winner]["W_reasons"].get(msg, 0) + 1
+      stats[winner]["Wmsg"][msg] = stats[winner]["Wmsg"].get(msg, 0) + 1
       stats[loser]["L"] = stats[loser]["L"] + 1
-      stats[loser]["L_reasons"][msg] = stats[loser]["L_reasons"].get(msg, 0) + 1
-  print(scores)
-  print(stats)
+      stats[loser]["Lmsg"][msg] = stats[loser]["Lmsg"].get(msg, 0) + 1
+
+  # Transform the dictionary into a list
+  def merge_dicts(d1, d2):
+    d1.update(d2)
+    return d1
+  stats = [merge_dicts({"name": k}, v) for (k, v) in stats.items()]
+  export_results(stats)
