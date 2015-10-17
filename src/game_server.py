@@ -5,15 +5,15 @@ from itertools import count, izip, product
 from signal import signal, alarm, SIGALRM
 
 def get_move(board, score, move_fnc):
-    def handler(signum, frame):
-        raise Exception("Timeout!")
-    signal(SIGALRM, handler)
-    alarm(1)
-    try:
-        move = move_fnc(board, score)
-    finally:
-        alarm(0)
-    return move
+  def handler(signum, frame):
+    raise Exception("Timeout!")
+  signal(SIGALRM, handler)
+  alarm(1)
+  try:
+    move = move_fnc(board, score)
+  finally:
+    alarm(0)
+  return move
 
 def play_game(player0, player1, height=10, width=10):
   cells_no = height * width
@@ -50,16 +50,16 @@ def play_game(player0, player1, height=10, width=10):
 
 class BetterPlayer:
   def __init__(self):
-    pass
+    self.name = "James Hetfield"
 
   def move(self, board, score):
     cells_height = (len(board) - 1) / 2
     cells_width = len(board[0])
     # Look for a cell with 3 walls
     for r, c in product(range(cells_height), range(cells_width)):
-        cells = [(r*2,c), (r*2+2,c), (r*2+1,c), (r*2+1,c+1)]
-        if sum(map(lambda (x, y): board[x][y], cells)) == 3:
-            return next((x,y) for (x,y) in cells if board[x][y] == 0)
+      cells = [(r*2,c), (r*2+2,c), (r*2+1,c), (r*2+1,c+1)]
+      if sum(map(lambda (x, y): board[x][y], cells)) == 3:
+        return next((x,y) for (x,y) in cells if board[x][y] == 0)
     # If there was no such cell, pick a random one
     good_rows = filter(lambda i: 0 in board[i], range(len(board)))
     row = choice(good_rows)
@@ -68,7 +68,7 @@ class BetterPlayer:
 
 class RandomPlayer:
   def __init__(self):
-    pass
+    self.name = "Cristi Minculescu"
 
   def move(self, board, score):
     (row_idx, row) = choice([(idx, row) for (idx, row) in zip(count(), board) if 0 in row])
@@ -77,17 +77,25 @@ class RandomPlayer:
 
 class WrongPlayer:
   def __init__(self):
-    pass
+    self.name = "Dan Bittman"
 
   def move(self, board, score):
     from random import randint
     from time import sleep
-    sleep(0.8)
     row = randint(0, len(board)-1)
     col = randint(0, len(board[row])-1)
     return (row, col)
 
 if __name__ == "__main__":
-  p1 = RandomPlayer()
-  p2 = BetterPlayer()
-  print(play_game(p2, p1))
+  players = [RandomPlayer, BetterPlayer, WrongPlayer]
+  scores = {name: 0 for name in map(lambda P: P().name, players)}
+  for (P1, P2) in product(players, players):
+    if P1 == P2:
+      continue
+    for size in [5, 10, 15]:
+      p1 = P1()
+      p2 = P2()
+      (p1_score, p2_score, _) = play_game(p1, p2, size, size)
+      scores[p1.name] = scores[p1.name] + p1_score
+      scores[p2.name] = scores[p2.name] + p2_score
+  print(scores)
