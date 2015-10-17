@@ -2,6 +2,18 @@
 
 from random import choice
 from itertools import count
+from signal import signal, alarm, SIGALRM
+
+def get_move(board, score, move_fnc):
+    def handler(signum, frame):
+        raise Exception("Timeout!")
+    signal(SIGALRM, handler)
+    alarm(1)
+    try:
+        move = move_fnc(board, score)
+    finally:
+        alarm(0)
+    return move
 
 def play_game(player0, player1, height=10, width=10):
   cells_no = height * width
@@ -11,7 +23,7 @@ def play_game(player0, player1, height=10, width=10):
   players = [player0, player1]
   while next((row for row in board if 0 in row), False):
     try:
-      (r, c) = players[current].move(board, (score[current], score[1-current]))
+      (r, c) = get_move(board, (score[current], score[1-current]), players[current].move)
       if board[r][c] != 0:
         return (cells_no * current, cells_no * (1-current), "wrong move")
       else:
@@ -40,8 +52,19 @@ class RandomPlayer:
     col_idx = choice([col_idx for col_idx, value in zip(count(), row) if value == 0])
     return (row_idx, col_idx)
 
+class WrongPlayer:
+  def __init__(self):
+    pass
+
+  def move(self, board, score):
+    from random import randint
+    from time import sleep
+    sleep(0.8)
+    row = randint(0, len(board)-1)
+    col = randint(0, len(board[row])-1)
+    return (row, col)
 
 if __name__ == "__main__":
   p1 = RandomPlayer()
-  p2 = RandomPlayer()
-  print(play_game(p1, p2))
+  p2 = WrongPlayer()
+  print(play_game(p2, p1))
