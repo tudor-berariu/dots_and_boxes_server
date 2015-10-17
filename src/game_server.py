@@ -1,7 +1,6 @@
 # Tudor Berariu, 2015
 
-from random import choice
-from itertools import count, izip, product
+from itertools import product
 from signal import signal, alarm, SIGALRM
 
 def get_move(board, score, move_fnc):
@@ -48,54 +47,46 @@ def play_game(player0, player1, height=10, width=10):
     current = 1 -current
   return (score[0], score[1], "ok")
 
-class BetterPlayer:
-  def __init__(self):
-    self.name = "James Hetfield"
+def get_players():
+  from os import listdir
+  from os.path import isfile, join
+  from imp import load_source
+  import inspect
 
-  def move(self, board, score):
-    cells_height = (len(board) - 1) / 2
-    cells_width = len(board[0])
-    # Look for a cell with 3 walls
-    for r, c in product(range(cells_height), range(cells_width)):
-      cells = [(r*2,c), (r*2+2,c), (r*2+1,c), (r*2+1,c+1)]
-      if sum(map(lambda (x, y): board[x][y], cells)) == 3:
-        return next((x,y) for (x,y) in cells if board[x][y] == 0)
-    # If there was no such cell, pick a random one
-    good_rows = filter(lambda i: 0 in board[i], range(len(board)))
-    row = choice(good_rows)
-    col = choice([c for c, val in izip(count(), board[row]) if val == 0])
-    return row, col
+  dir_path = "./players/"
+  loader = lambda f: (f.strip(".py"), load_source(f.strip(".py"), join(dir_path, f)))
+  modules = [loader(f) for f in listdir(dir_path) if isfile(join(dir_path,f)) and f.endswith(".py")]
 
-class RandomPlayer:
-  def __init__(self):
-    self.name = "Cristi Minculescu"
+  players = []
+  for name, module in modules:
+    cls = next(obj[1] for obj in inspect.getmembers(module) if obj[0] == name)
+    assert(inspect.isclass(cls))
+    players.append(cls)
 
-  def move(self, board, score):
-    (row_idx, row) = choice([(idx, row) for (idx, row) in zip(count(), board) if 0 in row])
-    col_idx = choice([col_idx for col_idx, value in zip(count(), row) if value == 0])
-    return (row_idx, col_idx)
-
-class WrongPlayer:
-  def __init__(self):
-    self.name = "Dan Bittman"
-
-  def move(self, board, score):
-    from random import randint
-    from time import sleep
-    row = randint(0, len(board)-1)
-    col = randint(0, len(board[row])-1)
-    return (row, col)
+  return players
 
 if __name__ == "__main__":
-  players = [RandomPlayer, BetterPlayer, WrongPlayer]
+  players = get_players()
   scores = {name: 0 for name in map(lambda P: P().name, players)}
+  stats = {name: {"W": 0, "L": 0, "W_reasons": {}, "L_reasons": {}} for name in scores.keys()}
   for (P1, P2) in product(players, players):
     if P1 == P2:
       continue
-    for size in [5, 10, 15]:
+    for size in [7, 11, 15]:
       p1 = P1()
       p2 = P2()
-      (p1_score, p2_score, _) = play_game(p1, p2, size, size)
+      (p1_score, p2_score, msg) = play_game(p1, p2, size, size)
       scores[p1.name] = scores[p1.name] + p1_score
       scores[p2.name] = scores[p2.name] + p2_score
+      if p1_score > p2_score:
+        winner = p1.name
+        loser = p2.name
+      else:
+        winner = p2.name
+        loser = p1.name
+      stats[winner]["W"] = stats[winner]["W"] + 1
+      stats[winner]["W_reasons"][msg] = stats[winner]["W_reasons"].get(msg, 0) + 1
+      stats[loser]["L"] = stats[loser]["L"] + 1
+      stats[loser]["L_reasons"][msg] = stats[loser]["L_reasons"].get(msg, 0) + 1
   print(scores)
+  print(stats)
