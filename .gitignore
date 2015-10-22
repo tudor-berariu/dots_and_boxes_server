@@ -60,3 +60,5 @@ target/
 # Emacs temporary and backup files
 *~
 \#*#
+
+src/stats.*
