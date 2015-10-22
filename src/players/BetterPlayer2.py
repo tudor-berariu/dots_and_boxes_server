@@ -3,9 +3,9 @@
 from random import choice
 from itertools import product, izip, count
 
-class BetterPlayer:
+class BetterPlayer2:
   def __init__(self):
-    self.name = "James Hetfield"
+    self.name = "David Coverdale"
 
   def move(self, board, score):
     cells_height = (len(board) - 1) / 2

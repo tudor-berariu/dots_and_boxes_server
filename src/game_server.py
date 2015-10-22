@@ -24,6 +24,7 @@ def play_game(player0, player1, height=10, width=10, timeout=True):
   current = 0
   players = [player0, player1]
   while next((row for row in board if 0 in row), False):
+    scored = False
     try:
       (r, c) = get_move(board, (score[current], score[1-current]), players[current].move, timeout)
       if board[r][c] != 0:
@@ -35,19 +36,24 @@ def play_game(player0, player1, height=10, width=10, timeout=True):
           # Check if cell above is closed now
           if r > 0 and sum([board[x][y] for (x,y) in [(r-2,c), (r-1,c), (r-1,c+1)]]) == 3:
             score = (score[0] + (1-current), score[1] + current)
+            scored = True
           # Check if cell below is closed now
           if r < 2 * height and sum([board[x][y] for (x,y) in [(r+2,c), (r+1,c), (r+1,c+1)]]) == 3:
             score = (score[0] + (1-current), score[1] + current)
+            scored = True
         else:
           # Check if cell on left is closed now
           if c > 0 and sum([board[x][y] for (x,y) in [(r-1,c-1), (r, c-1), (r+1, c-1)]]) == 3:
             score = (score[0] + (1-current), score[1] + current)
+            scored = True
           # Check if cell on right is closed now
           if c < width and sum([board[x][y] for (x,y) in [(r-1,c), (r, c+1), (r+1, c)]]) == 3:
             score = (score[0] + (1-current), score[1] + current)
+            scored = True
     except Exception as e:
       return (cells_no * current, cells_no * (1-current), str(e))
-    current = 1 -current
+    if not scored:
+      current = 1 -current
   return (score[0], score[1], "ok")
 
 def get_players():
@@ -75,6 +81,11 @@ def export_results(stats):
   with open("stats.tex", "w") as out_file:
     out_file.write(env.get_template("template.tex").render({"stats": stats}))
 
+def print_results(stats):
+  print "{0:25s} | {1:5s} | {2:5s} | {3:10s}".format("Name", "Wins", "Loses", "Score")
+  print "-" * 54
+  for s in stats:
+    print "{0:25s} | {1:5d} | {2:5d} | {3:10d}".format(s["name"], s["W"], s["L"], s["score"])
 
 if __name__ == "__main__":
   players = get_players()
@@ -104,5 +115,10 @@ if __name__ == "__main__":
     d1.update(d2)
     return d1
   stats = [merge_dicts({"name": k}, v) for (k, v) in stats.items()]
-  stats.sort(key=lambda x: x["W"], reverse=True)
-  export_results(stats)
+  # Let's sort stats
+  stats.sort(key=lambda x: (x["W"], x["score"]), reverse=True)
+  from sys import argv
+  if 'pdf' in argv:
+    export_results(stats)
+  else:
+    print_results(stats)
