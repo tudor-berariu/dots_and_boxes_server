@@ -7,7 +7,7 @@ stats: stats.tex
 	rm stats.aux stats.log
 	gnome-open stats.pdf
 
-stats.tex:
+stats.tex: game_server.py
 	python game_server.py
 
 clean:

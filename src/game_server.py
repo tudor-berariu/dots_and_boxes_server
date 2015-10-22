@@ -58,7 +58,8 @@ def get_players():
 
   dir_path = "./players/"
   loader = lambda f: (f.strip(".py"), load_source(f.strip(".py"), join(dir_path, f)))
-  modules = [loader(f) for f in listdir(dir_path) if isfile(join(dir_path,f)) and f.endswith(".py")]
+  is_player_file = lambda f: isfile(join(dir_path, f)) and f.endswith(".py") and not f.startswith("__")
+  modules = [loader(f) for f in listdir(dir_path) if is_player_file(f)]
 
   players = []
   for name, module in modules:
