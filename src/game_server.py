@@ -3,18 +3,21 @@
 from itertools import product
 from signal import signal, alarm, SIGALRM
 
-def get_move(board, score, move_fnc):
-  def handler(signum, frame):
-    raise Exception("Timeout!")
-  signal(SIGALRM, handler)
-  alarm(1)
-  try:
-    move = move_fnc(board, score)
-  finally:
-    alarm(0)
-  return move
+def get_move(board, score, move_fnc, timeout):
+  if timeout:
+    def handler(signum, frame):
+      raise Exception("Timeout!")
+    signal(SIGALRM, handler)
+    alarm(1)
+    try:
+      move = move_fnc(board, score)
+    finally:
+      alarm(0)
+    return move
+  else:
+    return move_fnc(board, score)
 
-def play_game(player0, player1, height=10, width=10):
+def play_game(player0, player1, height=10, width=10, timeout=True):
   cells_no = height * width
   board = [[0 for col in range(width + row % 2)] for row in range(height * 2 + 1)]
   score = (0,0)
@@ -22,7 +25,7 @@ def play_game(player0, player1, height=10, width=10):
   players = [player0, player1]
   while next((row for row in board if 0 in row), False):
     try:
-      (r, c) = get_move(board, (score[current], score[1-current]), players[current].move)
+      (r, c) = get_move(board, (score[current], score[1-current]), players[current].move, timeout)
       if board[r][c] != 0:
         # This means your algorithm sucks!
         return (cells_no * current, cells_no * (1-current), "wrong move")
